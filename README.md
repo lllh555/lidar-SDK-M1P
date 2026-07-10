@@ -1,5 +1,25 @@
 # RoboSense LiDAR ROS2 Jazzy Deployment and Recording
 
+## 克隆后部署（可复现版本）
+
+部署脚本会根据脚本自身位置定位项目根目录，不要求克隆到固定路径。请在 WSL Ubuntu 24.04 中执行：
+
+```bash
+git clone https://github.com/lllh555/lidar-SDK-M1P.git
+cd lidar-SDK-M1P
+bash scripts/bootstrap_ros2_jazzy_rslidar.sh
+```
+
+脚本会初始化本仓库锁定提交的 `rslidar_sdk`、`rslidar_msg` 及其嵌套子模块，再构建 ROS 2 工作区。部署前请按实际设备检查并修改 `config/rslidar_sdk_config.yaml` 中的雷达型号与接收端口；电脑网卡 IP 仍需由部署者按现场网络配置。
+
+启动时执行：
+
+```bash
+bash scripts/start_lidar.sh
+```
+
+如需使用其他设备配置，可通过 `LIDAR_SDK_CONFIG=/path/to/config.yaml bash scripts/start_lidar.sh` 指定配置文件。
+
 本文档记录当前项目从部署 `rslidar_sdk` 到录制点云的完整流程。当前项目路径：
 
 ```text

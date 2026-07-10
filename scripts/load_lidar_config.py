@@ -45,6 +45,13 @@ def emit(name, value):
     print(f"{name}={shlex.quote(str(value))}")
 
 
+def resolve_path(value, base_dir, name):
+    path = Path(as_string(value, name)).expanduser()
+    if not path.is_absolute():
+        path = base_dir / path
+    return path.resolve()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("config", type=Path)
@@ -55,16 +62,19 @@ def main():
     if not isinstance(config, dict):
         raise ValueError("The YAML root must be a mapping")
 
-    project_dir = as_string(
-        nested_get(config, ("project", "project_dir"), "/mnt/e/project/lidar-sdk"),
+    config_dir = args.config.resolve().parent
+    project_dir = resolve_path(
+        nested_get(config, ("project", "project_dir"), "."),
+        config_dir,
         "project.project_dir",
     )
     ros_distro = as_string(
         nested_get(config, ("project", "ros_distro"), "jazzy"),
         "project.ros_distro",
     )
-    workspace_dir = as_string(
-        nested_get(config, ("project", "workspace_dir"), f"{project_dir}/ros2_ws"),
+    workspace_dir = resolve_path(
+        nested_get(config, ("project", "workspace_dir"), "ros2_ws"),
+        project_dir,
         "project.workspace_dir",
     )
 
@@ -124,8 +134,9 @@ def main():
             nested_get(config, ("recording", "topic"), "/rslidar_points"),
             "recording.topic",
         ),
-        "POINT_BAG_DIR": as_string(
-            nested_get(config, ("recording", "output_dir"), f"{project_dir}/bags/points"),
+        "POINT_BAG_DIR": resolve_path(
+            nested_get(config, ("recording", "output_dir"), "bags/points"),
+            project_dir,
             "recording.output_dir",
         ),
         "BAG_PREFIX": as_string(
@@ -165,12 +176,18 @@ def main():
             nested_get(config, ("export", "input_bag"), "latest"),
             "export.input_bag",
         ),
-        "EXPORT_OUTPUT_DIR": as_string(
-            nested_get(config, ("export", "output_dir"), ""),
-            "export.output_dir",
+        "EXPORT_OUTPUT_DIR": (
+            ""
+            if not nested_get(config, ("export", "output_dir"), "")
+            else resolve_path(
+                nested_get(config, ("export", "output_dir"), ""),
+                project_dir,
+                "export.output_dir",
+            )
         ),
-        "EXPORT_ROOT": as_string(
-            nested_get(config, ("export", "output_root"), f"{project_dir}/exports"),
+        "EXPORT_ROOT": resolve_path(
+            nested_get(config, ("export", "output_root"), "exports"),
+            project_dir,
             "export.output_root",
         ),
         "EXPORT_FORMAT": export_format,

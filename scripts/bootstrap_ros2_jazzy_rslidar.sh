@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_DIR="/mnt/e/project/lidar-sdk"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
 WS_DIR="${PROJECT_DIR}/ros2_ws"
 SRC_DIR="${WS_DIR}/src"
 
@@ -41,18 +42,21 @@ echo "[4/7] Installing ROS2 Jazzy and SDK dependencies"
 sudo apt update
 sudo apt install -y ros-jazzy-desktop python3-colcon-common-extensions ros-dev-tools python3-empy python3-yaml libyaml-cpp-dev libpcap-dev
 
-echo "[5/7] Fetching RoboSense sources"
+echo "[5/7] Fetching pinned RoboSense sources"
 mkdir -p "${SRC_DIR}" "${PROJECT_DIR}/bags/packets" "${PROJECT_DIR}/bags/points" "${PROJECT_DIR}/exports/pcd" "${PROJECT_DIR}/exports/npy" "${PROJECT_DIR}/exports/npz" "${PROJECT_DIR}/exports/bin"
 
-if [ ! -d "${SRC_DIR}/rslidar_sdk/.git" ]; then
-  git clone https://github.com/RoboSense-LiDAR/rslidar_sdk.git "${SRC_DIR}/rslidar_sdk"
+if ! git -C "${PROJECT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "This script must be run from a Git clone of this project."
+  exit 2
 fi
 
-if [ ! -d "${SRC_DIR}/rslidar_msg/.git" ]; then
-  git clone https://github.com/RoboSense-LiDAR/rslidar_msg.git "${SRC_DIR}/rslidar_msg"
-fi
+git -C "${PROJECT_DIR}" submodule sync --recursive
+git -C "${PROJECT_DIR}" submodule update --init --recursive
 
-git -C "${SRC_DIR}/rslidar_sdk" submodule update --init --recursive
+if [ ! -f "${SRC_DIR}/rslidar_sdk/package.xml" ] || [ ! -f "${SRC_DIR}/rslidar_msg/package.xml" ]; then
+  echo "Pinned RoboSense sources are unavailable after submodule initialization."
+  exit 1
+fi
 
 echo "[6/7] Building workspace"
 set +u

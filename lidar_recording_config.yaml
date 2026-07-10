@@ -1,13 +1,14 @@
 # Central configuration for LiDAR recording and point-cloud export.
 
 project:
-  project_dir: /mnt/e/project/lidar-sdk
+  # All relative paths are resolved from this file's directory.
+  project_dir: .
   ros_distro: jazzy
-  workspace_dir: /mnt/e/project/lidar-sdk/ros2_ws
+  workspace_dir: ros2_ws
 
 recording:
   topic: /rslidar_points
-  output_dir: /mnt/e/project/lidar-sdk/bags/points
+  output_dir: bags/points
   bag_prefix: points
 
   # ROS2 storage container: mcap or sqlite3.
@@ -47,7 +48,7 @@ export:
   # Leave empty to write to <output_root>/<format>/<bag_name>.
   # Set an absolute path to use that exact output directory.
   output_dir: ""
-  output_root: /mnt/e/project/lidar-sdk/exports
+  output_root: exports
 
   # npy, npz, bin, or pcd
   format: npy
