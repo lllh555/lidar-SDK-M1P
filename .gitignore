@@ -1,0 +1,56 @@
+# ROS 2 / colcon build outputs
+/ros2_ws/build/
+/ros2_ws/install/
+/ros2_ws/log/
+
+# General CMake and compiler outputs
+build/
+build-*/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+*.o
+*.obj
+*.so
+*.so.*
+*.dll
+*.dylib
+*.a
+*.lib
+*.exe
+
+# Recorded LiDAR data and generated point-cloud exports
+/bags/
+/exports/
+*.bag
+*.db3
+*.mcap
+*.pcap
+*.pcd
+*.npy
+*.bin
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+
+# IDE and editor settings
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+*~
+
+# Operating-system files and local secrets
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example

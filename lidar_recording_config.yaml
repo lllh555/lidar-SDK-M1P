@@ -1,0 +1,56 @@
+# Central configuration for LiDAR recording and point-cloud export.
+
+project:
+  project_dir: /mnt/e/project/lidar-sdk
+  ros_distro: jazzy
+  workspace_dir: /mnt/e/project/lidar-sdk/ros2_ws
+
+recording:
+  topic: /rslidar_points
+  output_dir: /mnt/e/project/lidar-sdk/bags/points
+  bag_prefix: points
+
+  # ROS2 storage container: mcap or sqlite3.
+  # mcap creates .mcap files; sqlite3 creates .db3 files inside the bag directory.
+  # ROS1 .bag is not a rosbag2 recording format.
+  storage_id: mcap
+
+  compression:
+    # storage: native MCAP chunk compression (recommended)
+    # file/message: rosbag2 external compression; none: disable compression
+    mode: storage
+    # Used when mode is not none. Jazzy rosbag2 supports zstd.
+    format: zstd
+    # MCAP native compression profile: zstd_fast or zstd_small.
+    # zstd_fast is recommended for real-time recording.
+    profile: zstd_fast
+
+  # Empty means start immediately. Otherwise use local time: YYYY-MM-DD HH:MM:SS
+  start_time: ""
+  duration_seconds: 200
+
+  # Usually only /rslidar_points is needed.
+  extra_topics: []
+
+  # Set to 0 to skip the topic pre-check.
+  wait_for_topic_seconds: 20
+  wait_for_topic_qos: sensor_data
+
+  # TERM has been reliable with rosbag2 in this WSL/Jazzy project.
+  stop_signal: TERM
+  stop_grace_seconds: 20
+
+export:
+  # Use latest or an absolute rosbag2 directory.
+  input_bag: latest
+
+  # Leave empty to write to <output_root>/<format>/<bag_name>.
+  # Set an absolute path to use that exact output directory.
+  output_dir: ""
+  output_root: /mnt/e/project/lidar-sdk/exports
+
+  # npy, npz, bin, or pcd
+  format: npy
+
+  # 0 means export every frame.
+  max_frames: 0
