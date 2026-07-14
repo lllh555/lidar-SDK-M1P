@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
 WS_DIR="${PROJECT_DIR}/ros2_ws"
 SRC_DIR="${WS_DIR}/src"
+ROS_SETUP_FILE="${ROS_SETUP_FILE:-/opt/ros/jazzy/setup.bash}"
 
 if [ -n "${CONDA_PREFIX:-}" ] || [ -n "${CONDA_DEFAULT_ENV:-}" ]; then
   echo "[0/7] Detected conda environment; forcing system Python for ROS2 build"
@@ -59,13 +60,17 @@ if [ ! -f "${SRC_DIR}/rslidar_sdk/package.xml" ] || [ ! -f "${SRC_DIR}/rslidar_m
 fi
 
 echo "[6/7] Building workspace"
+if [ ! -f "${ROS_SETUP_FILE}" ]; then
+  echo "ROS setup file not found after installation: ${ROS_SETUP_FILE}"
+  echo "Set ROS_SETUP_FILE if ROS was installed outside its standard location."
+  exit 1
+fi
 set +u
-source /opt/ros/jazzy/setup.bash
+source "${ROS_SETUP_FILE}"
 set -u
 cd "${WS_DIR}"
 colcon build --symlink-install --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3
 
 echo "[7/7] Deployment complete"
 echo "Next:"
-echo "  source ${WS_DIR}/install/setup.bash"
-echo "  ros2 launch rslidar_sdk start.py"
+echo "  bash ${SCRIPT_DIR}/start_lidar.sh"

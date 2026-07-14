@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 CONFIG_FILE="${LIDAR_RECORDING_CONFIG:-${SCRIPT_DIR}/../lidar_recording_config.yaml}"
 
 if [ "${1:-}" = "--config" ]; then
@@ -31,9 +31,16 @@ if ! CONFIG_VALUES="$(/usr/bin/python3 "${SCRIPT_DIR}/load_lidar_config.py" "${C
   exit 2
 fi
 eval "${CONFIG_VALUES}"
+ROS_SETUP_FILE="${ROS_SETUP_FILE:-/opt/ros/${ROS_DISTRO}/setup.bash}"
+
+if [ ! -f "${ROS_SETUP_FILE}" ]; then
+  echo "ROS setup file not found: ${ROS_SETUP_FILE}"
+  echo "Set ROS_SETUP_FILE or project.ros_distro to match this machine."
+  exit 2
+fi
 
 set +u
-source "/opt/ros/${ROS_DISTRO}/setup.bash"
+source "${ROS_SETUP_FILE}"
 source "${WS_DIR}/install/setup.bash"
 set -u
 

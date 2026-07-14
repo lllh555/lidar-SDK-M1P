@@ -20,7 +20,9 @@ lidar:
       end_angle: 360
       pcap_repeat: true
       pcap_rate: 1.0
-      pcap_path: /home/robosense/lidar.pcap
+      # For PCAP playback, set a path relative to this config file.
+      # This is unused while msg_source is 1 (online LiDAR input).
+      pcap_path: ""
     ros:
       ros_frame_id: rslidar
       ros_recv_packet_topic: /rslidar_packets
