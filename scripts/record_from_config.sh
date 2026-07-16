@@ -55,7 +55,6 @@ if [ -n "${RECORD_START_TIME}" ]; then
 fi
 
 mkdir -p "${POINT_BAG_DIR}"
-OUT_DIR="${POINT_BAG_DIR}/${BAG_PREFIX}_$(date +%Y%m%d_%H%M%S)"
 
 if [ "${WAIT_FOR_TOPIC_SECONDS}" -gt 0 ]; then
   echo "Waiting up to ${WAIT_FOR_TOPIC_SECONDS}s for one message on ${POINT_TOPIC} using QoS ${WAIT_FOR_TOPIC_QOS}"
@@ -90,33 +89,66 @@ else
   echo "Compression: disabled"
 fi
 
-echo "Recording ${RECORD_DURATION_SECONDS}s to ${OUT_DIR}"
-echo "Storage: ${BAG_STORAGE_ID}"
-echo "Topics: ${TOPICS[*]}"
+record_once() {
+  local out_dir="$1"
+  local rec_pid
+  local stop_deadline
 
-setsid ros2 bag record -o "${OUT_DIR}" "${BAG_ARGS[@]}" --topics "${TOPICS[@]}" &
-REC_PID="$!"
+  echo "Recording ${RECORD_DURATION_SECONDS}s to ${out_dir}"
+  echo "Storage: ${BAG_STORAGE_ID}"
+  echo "Topics: ${TOPICS[*]}"
 
-sleep "${RECORD_DURATION_SECONDS}"
+  setsid ros2 bag record -o "${out_dir}" "${BAG_ARGS[@]}" --topics "${TOPICS[@]}" &
+  rec_pid="$!"
 
-echo "Stopping recorder process group ${REC_PID} with SIG${RECORD_STOP_SIGNAL}"
-kill "-${RECORD_STOP_SIGNAL}" "-${REC_PID}" 2>/dev/null || kill "-${RECORD_STOP_SIGNAL}" "${REC_PID}" 2>/dev/null || true
+  sleep "${RECORD_DURATION_SECONDS}"
 
-STOP_DEADLINE="$((SECONDS + RECORD_STOP_GRACE_SECONDS))"
-while kill -0 "${REC_PID}" 2>/dev/null; do
-  if [ "${SECONDS}" -ge "${STOP_DEADLINE}" ]; then
-    echo "Recorder did not stop after ${RECORD_STOP_GRACE_SECONDS}s; sending SIGKILL."
-    kill -KILL "-${REC_PID}" 2>/dev/null || kill -KILL "${REC_PID}" 2>/dev/null || true
-    break
+  echo "Stopping recorder process group ${rec_pid} with SIG${RECORD_STOP_SIGNAL}"
+  kill "-${RECORD_STOP_SIGNAL}" "-${rec_pid}" 2>/dev/null || kill "-${RECORD_STOP_SIGNAL}" "${rec_pid}" 2>/dev/null || true
+
+  stop_deadline="$((SECONDS + RECORD_STOP_GRACE_SECONDS))"
+  while kill -0 "${rec_pid}" 2>/dev/null; do
+    if [ "${SECONDS}" -ge "${stop_deadline}" ]; then
+      echo "Recorder did not stop after ${RECORD_STOP_GRACE_SECONDS}s; sending SIGKILL."
+      kill -KILL "-${rec_pid}" 2>/dev/null || kill -KILL "${rec_pid}" 2>/dev/null || true
+      break
+    fi
+    sleep 1
+  done
+
+  wait "${rec_pid}" || true
+
+  if [ ! -f "${out_dir}/metadata.yaml" ]; then
+    echo "Recording did not create metadata.yaml: ${out_dir}"
+    return 1
   fi
-  sleep 1
-done
 
-wait "${REC_PID}" || true
+  echo "Recording complete: ${out_dir}"
+}
 
-if [ ! -f "${OUT_DIR}/metadata.yaml" ]; then
-  echo "Recording did not create metadata.yaml: ${OUT_DIR}"
-  exit 1
+if [ "${RECORD_INTERVAL_SECONDS}" -eq 0 ]; then
+  record_once "${POINT_BAG_DIR}/${BAG_PREFIX}_$(date +%Y%m%d_%H%M%S)"
+  exit 0
 fi
 
-echo "Recording complete: ${OUT_DIR}"
+echo "Repeating recordings every ${RECORD_INTERVAL_SECONDS}s; repeat_count=0 means until stopped."
+cycle=1
+while [ "${RECORD_REPEAT_COUNT}" -eq 0 ] || [ "${cycle}" -le "${RECORD_REPEAT_COUNT}" ]; do
+  cycle_start_epoch="$(date +%s)"
+  record_once "${POINT_BAG_DIR}/${BAG_PREFIX}_$(date +%Y%m%d_%H%M%S)_$(printf '%04d' "${cycle}")"
+
+  if [ "${RECORD_REPEAT_COUNT}" -ne 0 ] && [ "${cycle}" -eq "${RECORD_REPEAT_COUNT}" ]; then
+    break
+  fi
+
+  next_start_epoch="$((cycle_start_epoch + RECORD_INTERVAL_SECONDS))"
+  now_epoch="$(date +%s)"
+  wait_seconds="$((next_start_epoch - now_epoch))"
+  if [ "${wait_seconds}" -gt 0 ]; then
+    echo "Waiting ${wait_seconds}s before recording $((cycle + 1))"
+    sleep "${wait_seconds}"
+  else
+    echo "Recording duration exceeded the ${RECORD_INTERVAL_SECONDS}s interval; starting recording $((cycle + 1)) now."
+  fi
+  cycle="$((cycle + 1))"
+done

@@ -30,6 +30,12 @@ recording:
   start_time: ""
   duration_seconds: 200
 
+  # Set to a positive value to repeatedly create independent bags. This is the
+  # interval between the start times of two recordings; 0 keeps single-run mode.
+  interval_seconds: 0
+  # Number of bags when interval_seconds is enabled; 0 means run until stopped.
+  repeat_count: 0
+
   # Usually only /rslidar_points is needed.
   extra_topics: []
 

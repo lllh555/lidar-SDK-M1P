@@ -155,6 +155,14 @@ def main():
             nested_get(config, ("recording", "duration_seconds"), 10),
             "recording.duration_seconds",
         ),
+        "RECORD_INTERVAL_SECONDS": as_non_negative_int(
+            nested_get(config, ("recording", "interval_seconds"), 0),
+            "recording.interval_seconds",
+        ),
+        "RECORD_REPEAT_COUNT": as_non_negative_int(
+            nested_get(config, ("recording", "repeat_count"), 0),
+            "recording.repeat_count",
+        ),
         "RECORD_EXTRA_TOPICS": extra_topics,
         "WAIT_FOR_TOPIC_SECONDS": as_non_negative_int(
             nested_get(config, ("recording", "wait_for_topic_seconds"), 20),
